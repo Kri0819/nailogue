@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#C4878A"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="Nailogue"/>
+  <meta name="description" content="美甲社群 + 個人美甲日記 App"/>
+  <title>Nailogue 💅</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icon-192.png"/>
+  <!-- Babel + React from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; width: 100%; overflow: hidden; }
+    body { background: #D8D0CC; font-family: sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef } = React;
+
+// ── Theme System ───────────────────────────────────────────────
+const THEMES = {
+  pink: {
+    name: "💗 Warm Pink",
+    bg: "#FAF7F5", card: "#FFFFFF", primary: "#C4878A", primaryDeep: "#A06268",
+    accent: "#E8CFCB", accentLight: "#F5EAE8", accentDeep: "#D7B2B2",
+    text: "#2C1F1F", textMid: "#7A6A6A", textLight: "#B8A8A8", border: "#EDE8E5",
+    heroGrad: "linear-gradient(135deg,#E8CFCB,#D7B2B2)",
+    navBg: "rgba(250,247,245,0.97)",
+  },
+  blue: {
+    name: "❄️ Glacier Blue",
+    bg: "#F3FAFC", card: "#FFFFFF", primary: "#61A5C2", primaryDeep: "#3D7A96",
+    accent: "#A9D6E5", accentLight: "#E0F4FA", accentDeep: "#7EC8E3",
+    text: "#1B3A4B", textMid: "#4A7A8A", textLight: "#8AB8C8", border: "#D8EEF5",
+    heroGrad: "linear-gradient(135deg,#A9D6E5,#61A5C2)",
+    navBg: "rgba(243,250,252,0.97)",
+  },
+  beige: {
+    name: "🤍 Minimal Beige",
+    bg: "#FAFAF8", card: "#FFFFFF", primary: "#8A8070", primaryDeep: "#6A6058",
+    accent: "#E8E0D0", accentLight: "#F5F0E8", accentDeep: "#C8C0B0",
+    text: "#2A2820", textMid: "#706858", textLight: "#A89E90", border: "#E8E0D8",
+    heroGrad: "linear-gradient(135deg,#E8E0D0,#C8C0B0)",
+    navBg: "rgba(250,250,248,0.97)",
+  },
+};
+
+// ── Mock Data ──────────────────────────────────────────────────
+const MOCK_RECORDS = [
+  { id:1, name:"冰透貓眼", date:"2026-05-05", salon:"K Nail Studio", ig:"@knailstudio", location:"台北市大安區", price:1800, apptTime:"14:00", arrivalTime:"13:58", arrivalNote:"美甲師主動幫我開門", styles:["極簡","純色"], colors:["藍","白"], season:"春", chat:"超好聊✨", rating:5, liked:true, note:"質感超好，師傅非常細心", image:null },
+  { id:2, name:"霧霧線法式", date:"2026-04-10", salon:"K Nail Studio", ig:"@knailstudio", location:"台北市大安區", price:1800, apptTime:"15:00", arrivalTime:"15:02", arrivalNote:"美甲師沒有說什麼", styles:["法式","極簡"], colors:["白","裸色"], season:"春", chat:"普通", rating:4, liked:false, note:"霧面很好看，持久度不錯", image:null },
+  { id:3, name:"珊瑚漸層", date:"2026-03-01", salon:"Pink Moon Nail", ig:"@pinkmoon", location:"台北市信義區", price:1500, apptTime:"13:00", arrivalTime:"12:55", arrivalNote:"美甲師不讓我進門", styles:["漸層"], colors:["粉","橘"], season:"春", chat:"普通", rating:4, liked:true, note:"", image:null },
+];
+
+const EXPLORE_POSTS = [
+  { id:101, name:"奶油白法式", ig:"@luna.nail", salon:"Luna Studio", region:"大安區", styles:["法式"], colors:["白"], rating:5, chat:"超好聊✨", liked:false, saved:false },
+  { id:102, name:"午夜藍幾何", ig:"@bluemoon.nails", salon:"Blue Moon", region:"信義區", styles:["幾何"], colors:["藍"], rating:4, chat:"普通", liked:false, saved:true },
+  { id:103, name:"碎花春日", ig:"@floraberry", salon:"Flora Berry", region:"中山區", styles:["碎花"], colors:["粉"], rating:5, chat:"超好聊✨", liked:true, saved:false },
+  { id:104, name:"焦糖漸層", ig:"@sugarcoat.nail", salon:"Sugar Coat", region:"松山區", styles:["漸層"], colors:["橘","裸色"], rating:4, chat:"不太說話", liked:false, saved:false },
+  { id:105, name:"純黑極簡", ig:"@blackink.nail", salon:"Black Ink", region:"大安區", styles:["純色","極簡"], colors:["黑"], rating:3, chat:"不太說話", liked:false, saved:false },
+  { id:106, name:"粉嫩莫蘭迪", ig:"@morandinail", salon:"Morandi Studio", region:"信義區", styles:["純色"], colors:["粉","裸色"], rating:5, chat:"超好聊✨", liked:true, saved:true },
+];
+
+// ── Helpers ───────────────────────────────────────────────────
+const toYMD = (d) => { const dt=new Date(d); return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`; };
+const fmtDate = (d) => d?.replace(/-/g,"/") || "";
+const daysSince = (d) => Math.floor((Date.now()-new Date(d))/86400000);
+const getDaysInMonth = (y,m) => new Date(y,m+1,0).getDate();
+const getFirstDay = (y,m) => new Date(y,m,1).getDay();
+
+// ── Icons ──────────────────────────────────────────────────────
+const Ico = {
+  Home: ({a,T}) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?T.primary:T.textLight} strokeWidth="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" fill={a?T.accentLight:"none"}/><path d="M9 21V12h6v9"/></svg>,
+  Calendar: ({a,T}) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?T.primary:T.textLight} strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>,
+  Add: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2"><path d="M12 5v14M5 12h14"/></svg>,
+  Explore: ({a,T}) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?T.primary:T.textLight} strokeWidth="1.8"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>,
+  Profile: ({a,T}) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?T.primary:T.textLight} strokeWidth="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>,
+  Bell: ({T,dot}) => <div style={{position:"relative"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={T.primary} strokeWidth="1.8"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>{dot&&<div style={{position:"absolute",top:-2,right:-2,width:8,height:8,borderRadius:"50%",background:"#E05050"}}/>}</div>,
+  Menu: ({T}) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={T.primary} strokeWidth="1.8"><path d="M3 6h18M3 12h18M3 18h18"/></svg>,
+  Heart: ({f,T}) => <svg width="18" height="18" viewBox="0 0 24 24" fill={f?T.accentDeep:"none"} stroke={f?T.accentDeep:T.textLight} strokeWidth="1.8"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/></svg>,
+  Bookmark: ({f,T}) => <svg width="16" height="16" viewBox="0 0 24 24" fill={f?T.primary:"none"} stroke={f?T.primary:T.textLight} strokeWidth="1.8"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>,
+  Edit: ({T}) => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.textMid} strokeWidth="1.8"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>,
+  Trash: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c97a7a" strokeWidth="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>,
+  Camera: ({T}) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={T.textMid} strokeWidth="1.8"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>,
+  Close: ({T}) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={T.textMid} strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>,
+  ChevR: ({T}) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.primary} strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>,
+  Star: ({filled}) => <span style={{fontSize:20,color:filled?"#E8A87C":"#DDD"}}>★</span>,
+};
+
+// ── Nail Placeholder ──────────────────────────────────────────
+const NailBg = ({seed=0,style}) => {
+  const gs=["linear-gradient(135deg,#C5D5E0,#8FAFC4 35%,#D4C5BB 70%,#C4B0AC)","linear-gradient(135deg,#D8C8D0,#B8A0B8 40%,#E0CECA 70%,#C8B0AE)","linear-gradient(135deg,#C8D8C8,#A0C0A8 35%,#D8CCC0 70%,#C4B0A8)","linear-gradient(135deg,#E0D0C0,#C0A898 40%,#E8D8CC 70%,#D0B8B0)","linear-gradient(135deg,#C8C8E0,#A0A0C8 35%,#D8D0E0 70%,#C0B8C8)"];
+  return (
+    <div style={{width:"100%",height:"100%",background:gs[seed%5],position:"relative",overflow:"hidden",...style}}>
+      <div style={{position:"absolute",top:"18%",left:"12%",width:"18%",height:"32%",borderRadius:"50% 50% 50% 50%/55% 55% 45% 45%",background:"rgba(255,255,255,0.25)",transform:"rotate(-8deg)"}}/>
+      <div style={{position:"absolute",top:"14%",left:"34%",width:"16%",height:"30%",borderRadius:"50% 50% 50% 50%/55% 55% 45% 45%",background:"rgba(255,255,255,0.2)",transform:"rotate(3deg)"}}/>
+      <div style={{position:"absolute",top:"20%",left:"54%",width:"15%",height:"28%",borderRadius:"50% 50% 50% 50%/55% 55% 45% 45%",background:"rgba(255,255,255,0.22)",transform:"rotate(-3deg)"}}/>
+      <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",opacity:0.12}}><span style={{fontSize:28}}>💅</span></div>
+    </div>
+  );
+};
+
+// ── Tag Component ──────────────────────────────────────────────
+const Tag = ({label,active,onClick,T,small}) => (
+  <button onClick={onClick} style={{padding:small?"3px 9px":"5px 12px",borderRadius:20,cursor:"pointer",border:`1.5px solid ${active?T.primary:T.border}`,background:active?T.primary:"transparent",color:active?"#fff":T.textMid,fontSize:small?11:12,fontFamily:"inherit",fontWeight:active?600:400,transition:"all 0.15s",whiteSpace:"nowrap"}}>{label}</button>
+);
+
+// ── Stars ─────────────────────────────────────────────────────
+const Stars = ({v,onChange,size=16,T}) => (
+  <span style={{display:"flex",gap:2}}>
+    {[1,2,3,4,5].map(s=>(
+      <span key={s} onClick={()=>onChange?.(s)} style={{fontSize:size,color:s<=v?T.primary:"#DDD",cursor:onChange?"pointer":"default"}}>★</span>
+    ))}
+  </span>
+);
+
+// ── Notification Panel ─────────────────────────────────────────
+function NotifPanel({T,days,onClose}) {
+  const notifs=[];
+  if(days>=12) notifs.push({id:1,icon:"💅",text:"該預約下一次美甲囉！",sub:`已經 ${days} 天了`});
+  notifs.push({id:2,icon:"✨",text:"歡迎使用 Nailogue",sub:"記錄你的每一次美麗"});
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:600,background:"rgba(0,0,0,0.3)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{position:"absolute",top:60,right:16,width:280,background:T.card,borderRadius:18,boxShadow:"0 8px 32px rgba(0,0,0,0.15)",overflow:"hidden",animation:"fadeIn 0.2s ease"}}>
+        <div style={{padding:"14px 16px 10px",borderBottom:`1px solid ${T.border}`,fontWeight:700,fontSize:14,color:T.text}}>通知</div>
+        {notifs.map(n=>(
+          <div key={n.id} style={{padding:"12px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",gap:10,alignItems:"flex-start"}}>
+            <span style={{fontSize:20}}>{n.icon}</span>
+            <div><div style={{fontSize:13,fontWeight:600,color:T.text}}>{n.text}</div><div style={{fontSize:11,color:T.textMid,marginTop:2}}>{n.sub}</div></div>
+          </div>
+        ))}
+        {notifs.length===0&&<div style={{padding:20,textAlign:"center",color:T.textMid,fontSize:13}}>暫無通知</div>}
+      </div>
+    </div>
+  );
+}
+
+// ── Hamburger Menu ─────────────────────────────────────────────
+function HamburgerMenu({T,user,themeName,setTheme,onNav,onLogout,onClose}) {
+  const Section = ({title,items}) => (
+    <div style={{marginBottom:20}}>
+      <div style={{fontSize:10,fontWeight:700,color:T.textLight,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8,paddingLeft:4}}>{title}</div>
+      {items.map(([icon,label,action])=>(
+        <button key={label} onClick={()=>{action?.();onClose();}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",borderRadius:12,background:"none",border:"none",cursor:"pointer",textAlign:"left",color:T.text,fontSize:14,fontFamily:"inherit",fontWeight:500,transition:"background 0.15s"}}
+          onMouseEnter={e=>e.currentTarget.style.background=T.accentLight}
+          onMouseLeave={e=>e.currentTarget.style.background="none"}>
+          <span style={{fontSize:18,width:24,textAlign:"center"}}>{icon}</span>{label}
+        </button>
+      ))}
+    </div>
+  );
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:700,background:"rgba(0,0,0,0.4)",backdropFilter:"blur(4px)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{position:"absolute",left:0,top:0,bottom:0,width:300,background:T.bg,boxShadow:"4px 0 32px rgba(0,0,0,0.15)",overflowY:"auto",animation:"slideRight 0.28s cubic-bezier(.32,1.2,.58,1)"}}>
+        {/* Header */}
+        <div style={{background:T.heroGrad,padding:"48px 20px 24px",position:"relative"}}>
+          <button onClick={onClose} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,0.3)",border:"none",borderRadius:"50%",width:32,height:32,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <Ico.Close T={T}/>
+          </button>
+          <div style={{width:52,height:52,borderRadius:"50%",background:"rgba(255,255,255,0.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,marginBottom:10}}>💅</div>
+          {user
+            ? <><div style={{fontFamily:"'Playfair Display',serif",fontSize:11,fontStyle:"italic",color:"rgba(255,255,255,0.8)"}}>{user}'s</div><div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#fff"}}>Nailogue</div></>
+            : <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#fff"}}>Nailogue</div>
+          }
+        </div>
+        <div style={{padding:"20px 16px"}}>
+          <Section title="導覽" items={[["🏠","Home",()=>onNav("home")],["💡","Explore",()=>onNav("explore")],["➕","Add",()=>onNav("add")],["📅","Appointment",()=>onNav("calendar")],["👤","Profile",()=>onNav("profile")]]}/>
+          {user&&<Section title="個人收藏" items={[["💅","My Nail Records",()=>onNav("home")],["🔖","Saved Inspirations",()=>onNav("profile")],["❤️","Favorite Nails",()=>onNav("home")]]}/>}
+          <Section title="時間" items={[["📅","Nail Calendar",()=>onNav("calendar")],["📖","Nail History",()=>onNav("home")]]}/>
+          <div style={{marginBottom:20}}>
+            <div style={{fontSize:10,fontWeight:700,color:T.textLight,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8,paddingLeft:4}}>主題</div>
+            {Object.entries(THEMES).map(([k,v])=>(
+              <button key={k} onClick={()=>setTheme(k)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 12px",borderRadius:12,background:themeName===k?T.accentLight:"none",border:themeName===k?`1.5px solid ${T.accent}`:"1.5px solid transparent",cursor:"pointer",textAlign:"left",color:T.text,fontSize:13,fontFamily:"inherit",fontWeight:themeName===k?700:400,marginBottom:4}}>
+                <span>{v.name}</span>{themeName===k&&<span style={{marginLeft:"auto",color:T.primary}}>✓</span>}
+              </button>
+            ))}
+          </div>
+          <Section title="支援" items={[["💅","Nail Care Tips",null],["📬","Feedback",null]]}/>
+          {user&&<button onClick={()=>{onLogout();onClose();}} style={{width:"100%",padding:"11px 0",borderRadius:14,border:"1.5px solid #e0a0a0",background:"transparent",color:"#c97070",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:8}}>🚪 Log Out</button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Auth Modal ─────────────────────────────────────────────────
+function AuthModal({T,mode,onClose,onAuth}) {
+  const [tab,setTab]=useState(mode);
+  const [username,setUsername]=useState("");
+  const [email,setEmail]=useState("");
+  const [pw,setPw]=useState("");
+  const inp={width:"100%",padding:"11px 14px",borderRadius:12,border:`1.5px solid ${T.border}`,background:T.bg,fontSize:14,fontFamily:"inherit",outline:"none",color:T.text,boxSizing:"border-box"};
+  const lbl={fontSize:11,fontWeight:700,color:T.textMid,marginBottom:5,display:"block",letterSpacing:0.5,textTransform:"uppercase"};
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:500,background:"rgba(0,0,0,0.4)",backdropFilter:"blur(8px)",display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:T.bg,borderRadius:"28px 28px 0 0",width:"100%",maxWidth:480,padding:"0 0 40px",boxShadow:"0 -12px 48px rgba(0,0,0,0.2)",animation:"slideUp 0.3s cubic-bezier(.32,1.2,.58,1)"}}>
+        <div style={{display:"flex",justifyContent:"center",padding:"14px 0 8px"}}><div style={{width:40,height:4,borderRadius:2,background:T.border}}/></div>
+        <div style={{display:"flex",borderBottom:`1px solid ${T.border}`,margin:"0 24px 24px"}}>
+          {["login","signup"].map(t=>(
+            <button key={t} onClick={()=>setTab(t)} style={{flex:1,padding:"10px 0",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:13,fontWeight:tab===t?700:400,color:tab===t?T.primary:T.textMid,borderBottom:`2px solid ${tab===t?T.primary:"transparent"}`,transition:"all 0.2s"}}>
+              {t==="login"?"Log In":"Sign Up"}
+            </button>
+          ))}
+        </div>
+        <div style={{padding:"0 24px"}}>
+          {tab==="signup"&&<div style={{marginBottom:16}}><label style={lbl}>Username <span style={{color:"#c97070"}}>*</span></label><input style={inp} placeholder="your_username" value={username} onChange={e=>setUsername(e.target.value)}/></div>}
+          <div style={{marginBottom:16}}><label style={lbl}>Email</label><input style={inp} type="email" placeholder="hello@nailogue.app" value={email} onChange={e=>setEmail(e.target.value)}/></div>
+          <div style={{marginBottom:24}}><label style={lbl}>Password</label><input style={inp} type="password" placeholder="••••••••" value={pw} onChange={e=>setPw(e.target.value)}/></div>
+          <button onClick={()=>{
+            if(tab==="login"&&email){
+              const u=email.includes("@")?prompt("請輸入你的 username：")||email.split("@")[0]:email;
+              onAuth(u); onClose();
+            } else if(tab==="signup"&&username){ onAuth(username); onClose(); }
+          }} style={{width:"100%",padding:"13px 0",borderRadius:14,background:T.primary,border:"none",color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginBottom:12}}>
+            {tab==="login"?"Log In":"Create Account"}
+          </button>
+          <button onClick={onClose} style={{width:"100%",padding:"11px 0",borderRadius:14,background:"transparent",border:`1.5px solid ${T.border}`,color:T.textMid,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Continue as Guest</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Add Page (single-page form, preserve layout, add custom style/color) ──
+const STYLE_OPTS=["法式","漸層","碎花","純色","極簡","華麗","幾何"];
+const COLOR_OPTS=["紅","粉","白","黑","裸色","藍","紫","綠","橘"];
+const SEASON_OPTS=["春","夏","秋","冬"];
+const CHAT_OPTS=["超好聊✨","普通","不太說話"];
+const ARRIVAL_OPTS=["美甲師主動幫我開門","美甲師不讓我進門","美甲師說只能做單色","需要等前一位客人","美甲師沒有說什麼","自訂"];
+
+function AddPage({T,onSave,onCancel,initial}) {
+  const blank={name:"",date:toYMD(new Date()),price:"",salon:"",ig:"",location:"",apptTime:"",arrivalTime:"",arrivalNote:"",styles:[],colors:[],season:"春",chat:"",rating:5,liked:false,note:"",image:null};
+  const [f,setF]=useState(initial?{...initial}:blank);
+  const [customArrival,setCustomArrival]=useState(false);
+  // Custom style/color state
+  const [customStyleInput,setCustomStyleInput]=useState("");
+  const [showStyleInput,setShowStyleInput]=useState(false);
+  const [customColorInput,setCustomColorInput]=useState("");
+  const [showColorInput,setShowColorInput]=useState(false);
+  const [extraStyles,setExtraStyles]=useState([]);
+  const [extraColors,setExtraColors]=useState([]);
+  const fileRef=useRef();
+  const toggle=(field,val)=>setF(p=>({...p,[field]:p[field].includes(val)?p[field].filter(x=>x!==val):[...p[field],val]}));
+
+  const diff=(()=>{if(!f.apptTime||!f.arrivalTime)return null;const[ah,am]=f.apptTime.split(":").map(Number);const[rh,rm]=f.arrivalTime.split(":").map(Number);return(rh*60+rm)-(ah*60+am);})();
+
+  const inp={width:"100%",padding:"11px 13px",borderRadius:12,border:`1.5px solid ${T.border}`,background:T.card,fontSize:14,fontFamily:"inherit",outline:"none",color:T.text,boxSizing:"border-box"};
+  const lbl={fontSize:11,fontWeight:700,color:T.primary,marginBottom:5,display:"block",letterSpacing:0.4,textTransform:"uppercase"};
+
+  const addCustomStyle=()=>{
+    const v=customStyleInput.trim();
+    if(v&&!STYLE_OPTS.includes(v)&&!extraStyles.includes(v)){setExtraStyles(p=>[...p,v]);setF(prev=>({...prev,styles:[...prev.styles,v]}))}
+    setCustomStyleInput("");setShowStyleInput(false);
+  };
+  const addCustomColor=()=>{
+    const v=customColorInput.trim();
+    if(v&&!COLOR_OPTS.includes(v)&&!extraColors.includes(v)){setExtraColors(p=>[...p,v]);setF(prev=>({...prev,colors:[...prev.colors,v]}))}
+    setCustomColorInput("");setShowColorInput(false);
+  };
+
+  return (
+    <div style={{background:T.bg,minHeight:"100%",paddingBottom:40}}>
+      {/* Sticky header */}
+      <div style={{background:T.card,padding:"16px 20px",borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
+        <button onClick={onCancel} style={{background:"none",border:"none",cursor:"pointer",color:T.textMid,fontSize:14,fontFamily:"inherit",fontWeight:600}}>取消</button>
+        <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:T.text}}>✦ 新增美甲紀錄</span>
+        <button onClick={()=>onSave({...f,id:initial?.id||Date.now()})} style={{background:T.primary,border:"none",borderRadius:20,padding:"7px 16px",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>儲存</button>
+      </div>
+
+      <div style={{padding:"20px 20px 0"}}>
+        {/* Photo */}
+        <div onClick={()=>fileRef.current.click()} style={{height:160,borderRadius:18,marginBottom:20,cursor:"pointer",overflow:"hidden",border:`2px dashed ${T.accentDeep}`,position:"relative"}}>
+          {f.image?<img src={f.image} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="nail"/>
+          :<div style={{height:"100%",background:T.accentLight,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8}}>
+            <Ico.Camera T={T}/><span style={{fontSize:13,color:T.textMid,fontWeight:500}}>點擊上傳照片</span>
+          </div>}
+          <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>setF(p=>({...p,image:ev.target.result}));r.readAsDataURL(file);}}/>
+        </div>
+
+        {/* 基本資訊 */}
+        <div style={{marginBottom:16}}><label style={lbl}>款式名稱</label><input style={inp} value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))} placeholder="e.g. 奶油白法式"/></div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+          <div><label style={lbl}>日期</label><input type="date" style={inp} value={f.date} onChange={e=>setF(p=>({...p,date:e.target.value}))}/></div>
+          <div><label style={lbl}>金額 NT$</label><input type="number" style={inp} value={f.price} onChange={e=>setF(p=>({...p,price:e.target.value}))} placeholder="1200"/></div>
+        </div>
+
+        {/* 店家資訊 */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+          <div><label style={lbl}>美甲店</label><input style={inp} value={f.salon} onChange={e=>setF(p=>({...p,salon:e.target.value}))} placeholder="店名"/></div>
+          <div><label style={lbl}>美甲師 IG</label><input style={inp} value={f.ig} onChange={e=>setF(p=>({...p,ig:e.target.value}))} placeholder="@handle"/></div>
+        </div>
+        <div style={{marginBottom:16}}><label style={lbl}>地址</label><input style={inp} value={f.location} onChange={e=>setF(p=>({...p,location:e.target.value}))} placeholder="台北市大安區…"/></div>
+
+        {/* 時間紀錄 */}
+        <div style={{background:T.accentLight,borderRadius:14,padding:"14px",marginBottom:16}}>
+          <div style={{fontSize:12,fontWeight:700,color:T.primary,marginBottom:10}}>⏰ 到達時間紀錄</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+            <div><label style={lbl}>預約時間</label><input type="time" style={inp} value={f.apptTime} onChange={e=>setF(p=>({...p,apptTime:e.target.value}))}/></div>
+            <div><label style={lbl}>實際到達</label><input type="time" style={inp} value={f.arrivalTime} onChange={e=>setF(p=>({...p,arrivalTime:e.target.value}))}/></div>
+          </div>
+          {diff!==null&&<div style={{padding:"5px 10px",borderRadius:8,background:diff<0?`${T.primary}18`:diff===0?"#e8f5ee":"#fdeee9",display:"inline-flex",gap:6,alignItems:"center",marginBottom:10}}>
+            <span style={{fontSize:12,fontWeight:700,color:diff<0?T.primary:diff===0?"#5a9070":"#c97070"}}>
+              {diff<0?`🔵 提早 ${Math.abs(diff)} 分到`:diff===0?"🟢 準時到":`🔴 晚到 ${diff} 分`}
+            </span>
+          </div>}
+          <label style={lbl}>美甲師的反應</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:customArrival?8:0}}>
+            {ARRIVAL_OPTS.map(o=>(
+              <button key={o} onClick={()=>{if(o==="自訂"){setCustomArrival(true);setF(p=>({...p,arrivalNote:""}));}else{setCustomArrival(false);setF(p=>({...p,arrivalNote:o}));}}} style={{padding:"5px 10px",borderRadius:16,border:`1.5px solid ${(f.arrivalNote===o||(o==="自訂"&&customArrival))?T.primary:T.border}`,background:(f.arrivalNote===o||(o==="自訂"&&customArrival))?`${T.primary}15`:"transparent",color:(f.arrivalNote===o||(o==="自訂"&&customArrival))?T.primary:T.textMid,fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:(f.arrivalNote===o)?600:400}}>{o}</button>
+            ))}
+          </div>
+          {customArrival&&<input style={{...inp,marginTop:4}} value={f.arrivalNote} onChange={e=>setF(p=>({...p,arrivalNote:e.target.value}))} placeholder="描述美甲師的反應…"/>}
+        </div>
+
+        {/* 季節 */}
+        <div style={{marginBottom:14}}><label style={lbl}>季節</label><div style={{display:"flex",gap:6}}>{SEASON_OPTS.map(o=><Tag key={o} label={o} active={f.season===o} onClick={()=>setF(p=>({...p,season:o}))} T={T}/>)}</div></div>
+
+        {/* 風格 + 自訂 */}
+        <div style={{marginBottom:14}}>
+          <label style={lbl}>風格（可複選）</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {[...STYLE_OPTS,...extraStyles].map(o=><Tag key={o} label={o} active={f.styles.includes(o)} onClick={()=>toggle("styles",o)} T={{...T,primary:T.primaryDeep}}/>)}
+            {showStyleInput
+              ?<div style={{display:"flex",gap:4,alignItems:"center"}}>
+                <input value={customStyleInput} onChange={e=>setCustomStyleInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCustomStyle()} placeholder="自訂風格" style={{padding:"4px 10px",borderRadius:16,border:`1.5px solid ${T.primary}`,fontSize:12,fontFamily:"inherit",outline:"none",width:90,color:T.text}}/>
+                <button onClick={addCustomStyle} style={{padding:"4px 8px",borderRadius:12,background:T.primary,border:"none",color:"#fff",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>✓</button>
+                <button onClick={()=>setShowStyleInput(false)} style={{padding:"4px 8px",borderRadius:12,background:"none",border:`1px solid ${T.border}`,color:T.textMid,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+              </div>
+              :<button onClick={()=>setShowStyleInput(true)} style={{padding:"5px 12px",borderRadius:20,border:`1.5px dashed ${T.border}`,background:"transparent",color:T.textMid,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>+ 自訂</button>
+            }
+          </div>
+        </div>
+
+        {/* 顏色 + 自訂 */}
+        <div style={{marginBottom:14}}>
+          <label style={lbl}>顏色（可複選）</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {[...COLOR_OPTS,...extraColors].map(o=><Tag key={o} label={o} active={f.colors.includes(o)} onClick={()=>toggle("colors",o)} T={{...T,primary:"#8A7898"}}/>)}
+            {showColorInput
+              ?<div style={{display:"flex",gap:4,alignItems:"center"}}>
+                <input value={customColorInput} onChange={e=>setCustomColorInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addCustomColor()} placeholder="自訂顏色" style={{padding:"4px 10px",borderRadius:16,border:"1.5px solid #8A7898",fontSize:12,fontFamily:"inherit",outline:"none",width:90,color:T.text}}/>
+                <button onClick={addCustomColor} style={{padding:"4px 8px",borderRadius:12,background:"#8A7898",border:"none",color:"#fff",fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>✓</button>
+                <button onClick={()=>setShowColorInput(false)} style={{padding:"4px 8px",borderRadius:12,background:"none",border:`1px solid ${T.border}`,color:T.textMid,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>✕</button>
+              </div>
+              :<button onClick={()=>setShowColorInput(true)} style={{padding:"5px 12px",borderRadius:20,border:`1.5px dashed ${T.border}`,background:"transparent",color:T.textMid,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>+ 自訂</button>
+            }
+          </div>
+        </div>
+
+        {/* 互動風格 */}
+        <div style={{marginBottom:14}}><label style={lbl}>美甲師聊天風格</label><div style={{display:"flex",gap:8}}>{CHAT_OPTS.map(o=><Tag key={o} label={o} active={f.chat===o} onClick={()=>setF(p=>({...p,chat:o}))} T={{...T,primary:"#7A9878"}}/>)}</div></div>
+
+        {/* 評分 + 最愛 */}
+        <div style={{display:"flex",gap:24,alignItems:"center",marginBottom:14}}>
+          <div><label style={lbl}>評分</label><Stars v={f.rating} onChange={v=>setF(p=>({...p,rating:v}))} size={24} T={T}/></div>
+          <div><label style={lbl}>最愛</label>
+            <button onClick={()=>setF(p=>({...p,liked:!p.liked}))} style={{background:f.liked?"#ffe0da":T.accentLight,border:"none",borderRadius:20,padding:"6px 14px",cursor:"pointer",fontSize:18}}>{f.liked?"❤️":"🤍"}</button>
+          </div>
+        </div>
+
+        {/* 備註 */}
+        <div style={{marginBottom:24}}><label style={lbl}>備註</label><textarea style={{...inp,resize:"none",minHeight:72}} value={f.note} onChange={e=>setF(p=>({...p,note:e.target.value}))} placeholder="心得、下次想試的款式…"/></div>
+
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={()=>onSave({...f,id:initial?.id||Date.now()})} style={{flex:1,padding:13,borderRadius:14,background:T.primary,border:"none",color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>💾 儲存</button>
+          <button onClick={onCancel} style={{padding:"13px 18px",borderRadius:14,border:`1.5px solid ${T.border}`,background:"transparent",color:T.textMid,fontSize:14,cursor:"pointer",fontFamily:"inherit"}}>取消</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Calendar / Appointment Page ────────────────────────────────
+function CalendarPage({T,records}) {
+  const today=new Date();
+  const [yr,setYr]=useState(today.getFullYear());
+  const [mo,setMo]=useState(today.getMonth());
+  const [sel,setSel]=useState(null);
+  const [appts,setAppts]=useState([{id:1,date:"2026-05-18",time:"14:00",artist:"Luna",salon:"Moon Nail",style:"藍色貓眼"}]);
+  const [showAdd,setShowAdd]=useState(false);
+  const [form,setForm]=useState({time:"14:00",artist:"",salon:"",style:""});
+  const WD=["日","一","二","三","四","五","六"];
+  const ML=["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"];
+  const days=getDaysInMonth(yr,mo);
+  const fd=getFirstDay(yr,mo);
+  const todayYMD=toYMD(today);
+  const aMap={};
+  appts.forEach(a=>{aMap[a.date]=aMap[a.date]||[];aMap[a.date].push(a);});
+  const rMap={};
+  records.forEach(r=>{rMap[r.date]=rMap[r.date]||[];rMap[r.date].push(r);});
+  const selYMD=sel?`${yr}-${String(mo+1).padStart(2,"0")}-${String(sel).padStart(2,"0")}`:null;
+  const inp={width:"100%",padding:"9px 12px",borderRadius:10,border:`1.5px solid ${T.border}`,background:T.bg,fontSize:13,fontFamily:"inherit",outline:"none",color:T.text,boxSizing:"border-box"};
+
+  return (
+    <div style={{paddingBottom:20}}>
+      <div style={{padding:"16px 20px 12px",borderBottom:`1px solid ${T.border}`}}>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:T.text}}>📅 預約行事曆</div>
+      </div>
+      {/* Month nav */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 20px 8px"}}>
+        <button onClick={()=>{if(mo===0){setYr(y=>y-1);setMo(11);}else setMo(m=>m-1);setSel(null);}} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:T.primary}}>‹</button>
+        <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:T.text}}>{yr} · {ML[mo]}</span>
+        <button onClick={()=>{if(mo===11){setYr(y=>y+1);setMo(0);}else setMo(m=>m+1);setSel(null);}} style={{background:"none",border:"none",fontSize:22,cursor:"pointer",color:T.primary}}>›</button>
+      </div>
+      {/* Weekday header */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",padding:"0 16px"}}>
+        {WD.map(d=><div key={d} style={{textAlign:"center",fontSize:11,color:T.textLight,padding:"3px 0",fontWeight:600}}>{d}</div>)}
+      </div>
+      {/* Calendar grid */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",padding:"0 16px",gap:2}}>
+        {Array.from({length:fd}).map((_,i)=><div key={"e"+i}/>)}
+        {Array.from({length:days},(_,i)=>i+1).map(day=>{
+          const ymd=`${yr}-${String(mo+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+          const hasA=!!aMap[ymd],hasR=!!rMap[ymd],isT=ymd===todayYMD,isS=day===sel;
+          return (
+            <div key={day} onClick={()=>setSel(day===sel?null:day)} style={{textAlign:"center",padding:"7px 2px",borderRadius:10,cursor:"pointer",fontSize:13,background:isS?T.primary:isT?T.accentLight:"transparent",color:isS?"#fff":isT?T.primary:T.text,fontWeight:(isT||isS)?700:400,transition:"background 0.15s",position:"relative"}}>
+              {day}
+              <div style={{display:"flex",justifyContent:"center",gap:2,marginTop:2}}>
+                {hasA&&<span style={{fontSize:10}}>🌟</span>}
+                {hasR&&<span style={{width:5,height:5,borderRadius:"50%",background:isS?"rgba(255,255,255,0.8)":T.accent,display:"inline-block"}}/>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {/* Legend */}
+      <div style={{display:"flex",gap:16,justifyContent:"center",margin:"10px 0 4px",fontSize:11,color:T.textMid}}>
+        <span>🌟 預約</span><span><span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:T.accent,marginRight:4}}/>完成紀錄</span>
+      </div>
+      {/* Selected day detail */}
+      {selYMD&&(
+        <div style={{margin:"14px 16px 0",background:T.card,borderRadius:16,padding:"16px",border:`1px solid ${T.border}`,boxShadow:`0 3px 14px ${T.primary}12`}}>
+          <div style={{fontWeight:700,fontSize:14,color:T.text,marginBottom:12}}>{fmtDate(selYMD)}</div>
+          {(aMap[selYMD]||[]).map(a=>(
+            <div key={a.id} style={{background:T.accentLight,borderRadius:12,padding:"10px 12px",marginBottom:8}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                <div>
+                  <div style={{fontSize:13,color:T.primary,fontWeight:700}}>🕐 {a.time} · {a.salon}</div>
+                  <div style={{fontSize:12,color:T.textMid,marginTop:3}}>美甲師：{a.artist}</div>
+                  {a.style&&<div style={{fontSize:12,color:T.textMid}}>款式：{a.style}</div>}
+                </div>
+                <button onClick={()=>setAppts(p=>p.filter(x=>x.id!==a.id))} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><Ico.Trash/></button>
+              </div>
+            </div>
+          ))}
+          {(rMap[selYMD]||[]).map(r=>(
+            <div key={r.id} style={{background:"#f2fff6",borderRadius:12,padding:"10px 12px",marginBottom:8,fontSize:13,color:"#407050"}}>✅ {r.name} — {r.salon}</div>
+          ))}
+          {showAdd?(
+            <div style={{marginTop:8}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                <input type="time" value={form.time} onChange={e=>setForm(p=>({...p,time:e.target.value}))} style={inp}/>
+                <input placeholder="美甲師名稱" value={form.artist} onChange={e=>setForm(p=>({...p,artist:e.target.value}))} style={inp}/>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+                <input placeholder="店家名稱" value={form.salon} onChange={e=>setForm(p=>({...p,salon:e.target.value}))} style={inp}/>
+                <input placeholder="預計款式" value={form.style} onChange={e=>setForm(p=>({...p,style:e.target.value}))} style={inp}/>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>{setAppts(p=>[...p,{id:Date.now(),date:selYMD,...form}]);setForm({time:"14:00",artist:"",salon:"",style:""});setShowAdd(false);}} style={{flex:1,padding:"9px 0",borderRadius:10,background:T.primary,border:"none",color:"#fff",fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:13}}>確認預約</button>
+                <button onClick={()=>setShowAdd(false)} style={{padding:"9px 13px",borderRadius:10,border:`1.5px solid ${T.border}`,background:"transparent",color:T.textMid,cursor:"pointer",fontFamily:"inherit",fontSize:13}}>取消</button>
+              </div>
+            </div>
+          ):(
+            <button onClick={()=>setShowAdd(true)} style={{width:"100%",padding:"9px 0",borderRadius:10,border:`1.5px dashed ${T.accentDeep}`,background:"transparent",color:T.primary,fontSize:13,cursor:"pointer",fontFamily:"inherit",marginTop:4}}>+ 新增預約</button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Home Page ──────────────────────────────────────────────────
+function HomePage({T,user,records,appointment,onBook,onLoginPrompt}) {
+  const lastNail=records[0];
+  const days=lastNail?daysSince(lastNail.date):null;
+  const showBookingPrompt=days!==null&&days>=15;
+  return (
+    <div style={{paddingBottom:20}}>
+      <div style={{textAlign:"center",fontSize:10,color:T.textLight,letterSpacing:2,margin:"6px 0 18px"}}>✦ 記錄 · 靈感 · 專屬於你的美甲日常 ✦</div>
+      {/* Landing (logged out) */}
+      {!user&&(
+        <div style={{padding:"0 20px",marginBottom:24}}>
+          <div style={{background:T.heroGrad,borderRadius:24,padding:"32px 24px",textAlign:"center"}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:28,fontWeight:700,color:T.primaryDeep,marginBottom:8}}>Nailogue</div>
+            <div style={{fontSize:14,color:T.textMid,marginBottom:24,lineHeight:1.7}}>Archive your nail journey<br/>beautifully.</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <button onClick={onLoginPrompt} style={{padding:"13px 0",borderRadius:14,background:T.primaryDeep,border:"none",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Log In</button>
+              <button onClick={onLoginPrompt} style={{padding:"13px 0",borderRadius:14,background:"#fff",border:`1.5px solid ${T.accentDeep}`,color:T.primaryDeep,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Sign Up</button>
+              <button style={{padding:"11px 0",background:"transparent",border:"none",color:T.textMid,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Continue as Guest</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Hero card */}
+      {user&&lastNail&&(
+        <div style={{padding:"0 20px",marginBottom:20}}>
+          <div style={{borderRadius:24,overflow:"hidden",height:280,position:"relative",boxShadow:`0 8px 32px ${T.primary}28`}}>
+            <NailBg seed={0}/>
+            <div style={{position:"absolute",inset:0,background:"linear-gradient(to top,rgba(20,30,40,0.88) 0%,rgba(20,30,40,0.1) 55%,transparent 100%)"}}/>
+            <div style={{position:"absolute",bottom:68,width:"100%",display:"flex",justifyContent:"center",gap:5}}>
+              {[0,1,2,3].map(i=><div key={i} style={{width:i===0?16:5,height:5,borderRadius:3,background:i===0?"#fff":"rgba(255,255,255,0.35)",transition:"width 0.3s"}}/>)}
+            </div>
+            <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"14px 20px 18px"}}>
+              <div style={{fontSize:11,color:"rgba(255,255,255,0.65)",marginBottom:1}}>現在的款式已維持</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:40,fontWeight:700,color:"#fff",lineHeight:1}}>{days} <span style={{fontSize:20}}>天</span></div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,0.65)",marginBottom:12}}>期待下一次的美麗</div>
+              {showBookingPrompt&&<button onClick={onBook} style={{background:T.primaryDeep,color:"#fff",border:"none",borderRadius:22,padding:"9px 18px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 4px 14px rgba(0,0,0,0.3)"}}>預約新款式 ›</button>}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Booking prompt ONLY if ≥15 days */}
+      {user&&showBookingPrompt&&!appointment&&(
+        <div style={{padding:"0 20px",marginBottom:16}}>
+          <div style={{background:`linear-gradient(135deg,${T.accentLight},#fff)`,borderRadius:16,padding:"13px 15px",border:`1px solid ${T.accentDeep}50`,display:"flex",alignItems:"center",gap:12}}>
+            <span style={{fontSize:22,flexShrink:0}}>⭐</span>
+            <div style={{flex:1}}><div style={{fontWeight:700,fontSize:13,color:T.text}}>換甲時間到了！</div><div style={{fontSize:11,color:T.textMid}}>已經 {days} 天，是時候預約新款式</div></div>
+            <button onClick={onBook} style={{background:T.primary,color:"#fff",border:"none",borderRadius:20,padding:"7px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>預約 ›</button>
+          </div>
+        </div>
+      )}
+      {/* Next appointment */}
+      {user&&appointment&&(
+        <div style={{padding:"0 20px",marginBottom:16}}>
+          <div style={{background:T.primaryDeep,borderRadius:18,padding:"14px 16px",boxShadow:`0 6px 24px ${T.primaryDeep}33`}}>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.55)",letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>📅 Next Appointment</div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff",marginBottom:8}}>{fmtDate(appointment.date)} {appointment.time}</div>
+            {[["美甲師",appointment.artist],["店家",appointment.salon],["款式",appointment.style]].filter(([,v])=>v).map(([k,v])=>(
+              <div key={k} style={{display:"flex",gap:10,fontSize:12,marginBottom:3}}>
+                <span style={{color:"rgba(255,255,255,0.5)",width:44}}>{k}</span>
+                <span style={{color:"#fff",fontWeight:500}}>{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* My records */}
+      {user&&records.length>0&&(
+        <div style={{padding:"0 20px",marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:T.text}}>我的紀錄 ✦</span>
+            <span style={{fontSize:12,color:T.primary,fontWeight:600}}>查看全部 ›</span>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:9}}>
+            {records.slice(0,3).map((r,i)=>(
+              <div key={r.id} style={{display:"flex",alignItems:"center",background:T.card,borderRadius:14,overflow:"hidden",border:`1px solid ${T.border}`,boxShadow:`0 2px 10px ${T.primary}08`}}>
+                <div style={{width:80,height:68,flexShrink:0}}><NailBg seed={i+1}/></div>
+                <div style={{flex:1,padding:"9px 12px"}}>
+                  <div style={{fontWeight:700,fontSize:14,color:T.text,marginBottom:1}}>{r.name}</div>
+                  <div style={{fontSize:11,color:T.textMid,marginBottom:2}}>{fmtDate(r.date)} · {r.salon}</div>
+                  <div style={{fontSize:13,fontWeight:700,color:T.primary}}>NT${r.price}</div>
+                </div>
+                <div style={{padding:"0 12px",flexShrink:0}}><Ico.Heart f={r.liked} T={T}/></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Trending preview */}
+      <div style={{marginBottom:20}}>
+        <div style={{padding:"0 20px",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:T.text}}>Trending Nails</span>
+          <span style={{fontSize:12,color:T.primary,fontWeight:600}}>See all ›</span>
+        </div>
+        <div style={{display:"flex",gap:12,paddingLeft:20,overflowX:"auto",paddingRight:20,paddingBottom:4}}>
+          {EXPLORE_POSTS.slice(0,4).map((p,i)=>(
+            <div key={p.id} style={{flexShrink:0,width:128,borderRadius:14,overflow:"hidden",background:T.card,boxShadow:`0 2px 12px ${T.primary}0A`}}>
+              <div style={{height:105}}><NailBg seed={i+3}/></div>
+              <div style={{padding:"8px 10px"}}>
+                <div style={{fontWeight:700,fontSize:12,color:T.text,marginBottom:1}}>{p.name}</div>
+                <div style={{fontSize:10,color:T.textMid}}>{p.ig}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Explore Page ───────────────────────────────────────────────
+function ExplorePage({T,user,onLoginPrompt}) {
+  const [posts,setPosts]=useState(EXPLORE_POSTS);
+  const [search,setSearch]=useState("");
+  const [filterRegion,setFilterRegion]=useState("全部");
+  const [filterStyle,setFilterStyle]=useState("全部");
+  const regions=["全部","大安區","信義區","中山區","松山區"];
+  const filtered=posts.filter(p=>{
+    const q=search.toLowerCase();
+    if(q&&!p.name.toLowerCase().includes(q)&&!p.ig.includes(q)&&!p.salon.toLowerCase().includes(q))return false;
+    if(filterRegion!=="全部"&&p.region!==filterRegion)return false;
+    if(filterStyle!=="全部"&&!p.styles.includes(filterStyle))return false;
+    return true;
+  });
+  const toggleLike=id=>{if(!user){onLoginPrompt();return;}setPosts(p=>p.map(x=>x.id===id?{...x,liked:!x.liked}:x));};
+  const toggleSave=id=>{if(!user){onLoginPrompt();return;}setPosts(p=>p.map(x=>x.id===id?{...x,saved:!x.saved}:x));};
+  return (
+    <div style={{paddingBottom:20}}>
+      <div style={{padding:"16px 20px 12px",background:T.card,borderBottom:`1px solid ${T.border}`,position:"sticky",top:0,zIndex:10}}>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:T.text,marginBottom:12}}>💡 探索靈感</div>
+        <div style={{position:"relative",marginBottom:10}}>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="搜尋美甲師、款式、地區…" style={{width:"100%",padding:"9px 14px 9px 34px",borderRadius:12,border:`1.5px solid ${T.border}`,background:T.bg,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",color:T.text}}/>
+          <span style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",color:T.textLight,fontSize:13}}>🔍</span>
+        </div>
+      </div>
+      <div style={{padding:"10px 20px",display:"flex",gap:6,overflowX:"auto"}}>
+        {regions.map(r=><Tag key={r} label={r} active={filterRegion===r} onClick={()=>setFilterRegion(r)} T={T} small/>)}
+      </div>
+      <div style={{padding:"0 20px 10px",display:"flex",gap:6,overflowX:"auto"}}>
+        {["全部",...STYLE_OPTS].map(s=><Tag key={s} label={s} active={filterStyle===s} onClick={()=>setFilterStyle(s)} T={{...T,primary:T.primaryDeep}} small/>)}
+      </div>
+      <div style={{padding:"0 20px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+        {filtered.map((p,i)=>(
+          <div key={p.id} style={{borderRadius:16,overflow:"hidden",background:T.card,boxShadow:`0 3px 14px ${T.primary}0C`}}>
+            <div style={{height:130,position:"relative"}}>
+              <NailBg seed={i+2}/>
+              <button onClick={()=>toggleSave(p.id)} style={{position:"absolute",top:7,right:7,background:"rgba(255,255,255,0.88)",border:"none",borderRadius:8,width:28,height:28,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}><Ico.Bookmark f={p.saved} T={T}/></button>
+            </div>
+            <div style={{padding:"9px 10px"}}>
+              <div style={{fontWeight:700,fontSize:13,color:T.text,marginBottom:2}}>{p.name}</div>
+              <div style={{fontSize:10,color:T.primary,marginBottom:5}}>{p.ig}</div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <Stars v={p.rating} size={12} T={T}/>
+                <button onClick={()=>toggleLike(p.id)} style={{background:"none",border:"none",cursor:"pointer",padding:0}}><Ico.Heart f={p.liked} T={T}/></button>
+              </div>
+              <div style={{marginTop:5,display:"flex",gap:3,flexWrap:"wrap"}}>
+                {p.styles.map(s=><span key={s} style={{fontSize:9,padding:"2px 6px",borderRadius:6,background:T.accentLight,color:T.primaryDeep}}>{s}</span>)}
+              </div>
+              <div style={{marginTop:3,fontSize:10,color:T.textLight}}>💬 {p.chat}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Profile Page ───────────────────────────────────────────────
+function ProfilePage({T,user,onLoginPrompt,onLogout,records,themeName,setTheme}) {
+  const [cycle,setCycle]=useState(15);
+  const [editName,setEditName]=useState(false);
+  const [name,setName]=useState(user||"");
+  const saved=EXPLORE_POSTS.filter(p=>p.saved);
+  const liked=records.filter(r=>r.liked);
+
+  if(!user) return(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:400,padding:40,textAlign:"center"}}>
+      <div style={{fontSize:48,marginBottom:16}}>👤</div>
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:T.text,marginBottom:8}}>Your Profile</div>
+      <div style={{fontSize:13,color:T.textMid,marginBottom:24}}>Log in to see your nail journey</div>
+      <button onClick={onLoginPrompt} style={{padding:"12px 28px",borderRadius:14,background:T.primary,border:"none",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Log In</button>
+    </div>
+  );
+
+  const Card=({children,style})=><div style={{background:T.card,borderRadius:16,padding:"16px",border:`1px solid ${T.border}`,marginBottom:12,...style}}>{children}</div>;
+  return (
+    <div style={{padding:"16px 20px",paddingBottom:20}}>
+      {/* Avatar */}
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"20px 0 20px"}}>
+        <div style={{width:68,height:68,borderRadius:"50%",background:T.heroGrad,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,marginBottom:10}}>💅</div>
+        {editName
+          ?<div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <input value={name} onChange={e=>setName(e.target.value)} style={{padding:"6px 12px",borderRadius:10,border:`1.5px solid ${T.primary}`,fontSize:16,fontFamily:"inherit",outline:"none",textAlign:"center",color:T.text}}/>
+            <button onClick={()=>setEditName(false)} style={{background:T.primary,border:"none",borderRadius:10,padding:"7px 12px",color:"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:700}}>Save</button>
+          </div>
+          :<div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:T.text}}>{name}</span>
+            <button onClick={()=>setEditName(true)} style={{background:"none",border:"none",cursor:"pointer"}}><Ico.Edit T={T}/></button>
+          </div>
+        }
+        <div style={{display:"flex",gap:24,marginTop:14}}>
+          {[["紀錄",records.length],["收藏",saved.length],["最愛",liked.length]].map(([l,v])=>(
+            <div key={l} style={{textAlign:"center"}}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:T.primary}}>{v}</div>
+              <div style={{fontSize:11,color:T.textMid}}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Saved Inspirations */}
+      {saved.length>0&&<Card>
+        <div style={{fontWeight:700,fontSize:13,color:T.text,marginBottom:12}}>🔖 Saved Inspirations</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+          {saved.map((p,i)=><div key={p.id} style={{borderRadius:10,overflow:"hidden",height:70}}><NailBg seed={i+4}/></div>)}
+        </div>
+      </Card>}
+
+      {/* Favorite Nails */}
+      {liked.length>0&&<Card>
+        <div style={{fontWeight:700,fontSize:13,color:T.text,marginBottom:12}}>❤️ Favorite Nails</div>
+        {liked.map(r=>(
+          <div key={r.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+            <div style={{width:44,height:36,borderRadius:8,overflow:"hidden",flexShrink:0}}><NailBg seed={r.id}/></div>
+            <div><div style={{fontSize:13,fontWeight:600,color:T.text}}>{r.name}</div><div style={{fontSize:11,color:T.textMid}}>{r.salon}</div></div>
+          </div>
+        ))}
+      </Card>}
+
+      {/* Cycle setting */}
+      <Card>
+        <div style={{fontWeight:700,fontSize:13,color:T.text,marginBottom:12}}>⚙️ 換甲週期</div>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <input type="range" min={7} max={30} value={cycle} onChange={e=>setCycle(Number(e.target.value))} style={{flex:1,accentColor:T.primary}}/>
+          <span style={{fontWeight:700,color:T.primary,fontSize:15,minWidth:36,textAlign:"center"}}>{cycle}天</span>
+        </div>
+        <div style={{fontSize:11,color:T.textMid,marginTop:6}}>超過此天數後首頁會提醒你預約</div>
+      </Card>
+
+      {/* Theme */}
+      <Card>
+        <div style={{fontWeight:700,fontSize:13,color:T.text,marginBottom:12}}>🎨 主題切換</div>
+        {Object.entries(THEMES).map(([k,v])=>(
+          <button key={k} onClick={()=>setTheme(k)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 12px",borderRadius:12,background:themeName===k?T.accentLight:"none",border:`1.5px solid ${themeName===k?T.accent:T.border}`,cursor:"pointer",textAlign:"left",color:T.text,fontSize:13,fontFamily:"inherit",fontWeight:themeName===k?700:400,marginBottom:6}}>
+            {v.name}{themeName===k&&<span style={{marginLeft:"auto",color:T.primary}}>✓</span>}
+          </button>
+        ))}
+      </Card>
+
+      {/* Nail care */}
+      <Card>
+        <div style={{fontWeight:700,fontSize:13,color:T.text,marginBottom:12}}>💅 Nail Care Tips</div>
+        {["每 2–3 週補甲，避免指甲受損","卸甲後塗抹護甲油保養","避免用指甲開罐或刮物","補充生物素（Biotin）強化指甲"].map(t=>(
+          <div key={t} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:8}}>
+            <span style={{color:T.accentDeep,flexShrink:0}}>✦</span>
+            <span style={{fontSize:12,color:T.textMid,lineHeight:1.5}}>{t}</span>
+          </div>
+        ))}
+      </Card>
+
+      <Card>
+        <div style={{fontWeight:700,fontSize:13,color:T.text,marginBottom:12}}>📬 回饋 / 聯絡</div>
+        <button style={{width:"100%",padding:"9px 0",borderRadius:12,border:`1.5px solid ${T.border}`,background:"transparent",color:T.textMid,fontSize:13,cursor:"pointer",fontFamily:"inherit",marginBottom:8}}>Send Feedback</button>
+        <button style={{width:"100%",padding:"9px 0",borderRadius:12,border:`1.5px solid ${T.border}`,background:"transparent",color:T.textMid,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>Contact Us</button>
+      </Card>
+
+      <button onClick={onLogout} style={{width:"100%",padding:"12px 0",borderRadius:14,border:"1.5px solid #e0a0a0",background:"transparent",color:"#c97070",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit",marginTop:4}}>🚪 Log Out</button>
+    </div>
+  );
+}
+
+// ── Booking Modal ─────────────────────────────────────────────
+function BookingModal({T,onClose,onConfirm,initial}) {
+  const [form,setForm]=useState(initial||{artist:"",salon:"",date:"",time:"14:00",style:"",note:""});
+  const inp={width:"100%",padding:"11px 13px",borderRadius:12,border:`1.5px solid ${T.border}`,background:T.bg,fontSize:14,fontFamily:"inherit",outline:"none",color:T.text,boxSizing:"border-box"};
+  const lbl={fontSize:11,fontWeight:700,color:T.textMid,marginBottom:5,display:"block",letterSpacing:0.4,textTransform:"uppercase"};
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:400,background:"rgba(0,0,0,0.45)",backdropFilter:"blur(8px)",display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:T.bg,borderRadius:"28px 28px 0 0",width:"100%",maxWidth:480,maxHeight:"88vh",overflowY:"auto",boxShadow:"0 -12px 48px rgba(0,0,0,0.2)",animation:"slideUp 0.3s cubic-bezier(.32,1.2,.58,1)"}}>
+        <div style={{display:"flex",justifyContent:"center",padding:"14px 0 4px"}}><div style={{width:40,height:4,borderRadius:2,background:T.border}}/></div>
+        <div style={{padding:"8px 24px 36px"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:T.text,marginBottom:4}}>預約新款式</div>
+          <div style={{fontSize:12,color:T.textMid,marginBottom:20}}>記錄你的下一次美麗時刻</div>
+          {[["美甲師","artist","text","e.g. Luna"],["店家名稱","salon","text","e.g. Moon Nail"],["預約日期","date","date",""],["預約時間","time","time",""],["預計款式","style","text","e.g. 藍色貓眼"]].map(([label,field,type,ph])=>(
+            <div key={field} style={{marginBottom:13}}>
+              <label style={lbl}>{label}</label>
+              <input type={type} style={inp} placeholder={ph} value={form[field]} onChange={e=>setForm(f=>({...f,[field]:e.target.value}))}/>
+            </div>
+          ))}
+          <div style={{marginBottom:22}}>
+            <label style={lbl}>備註（選填）</label>
+            <textarea style={{...inp,resize:"none",height:60}} value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))} placeholder="任何備注或想法…"/>
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={onClose} style={{flex:1,padding:"12px 0",borderRadius:14,border:`1.5px solid ${T.border}`,background:"transparent",color:T.textMid,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancel</button>
+            <button onClick={()=>{if(form.artist&&form.date){onConfirm(form);onClose();}}} style={{flex:2,padding:"12px 0",borderRadius:14,background:T.primary,border:"none",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main App ───────────────────────────────────────────────────
+export default function App() {
+  const [themeName,setThemeName]=useState("pink");
+  const T=THEMES[themeName];
+  const [user,setUser]=useState(null);
+  const [tab,setTab]=useState("home");
+  const [records,setRecords]=useState(MOCK_RECORDS);
+  const [appointment,setAppointment]=useState(null);
+  const [showAuth,setShowAuth]=useState(false);
+  const [authMode,setAuthMode]=useState("login");
+  const [showBooking,setShowBooking]=useState(false);
+  const [showAdd,setShowAdd]=useState(false);
+  const [showMenu,setShowMenu]=useState(false);
+  const [showNotif,setShowNotif]=useState(false);
+  const lastNail=records[0];
+  const days=lastNail?daysSince(lastNail.date):0;
+  const hasNotif=days>=12;
+
+  const TABS=[
+    {key:"home",label:"首頁",Icon:Ico.Home},
+    {key:"calendar",label:"預約",Icon:Ico.Calendar},
+    {key:"add",label:"",Icon:Ico.Add},
+    {key:"explore",label:"探索",Icon:Ico.Explore},
+    {key:"profile",label:"我的",Icon:Ico.Profile},
+  ];
+
+  if(showAdd) return (
+    <div style={{maxWidth:480,margin:"0 auto",minHeight:"100vh",background:T.bg,fontFamily:"'Nunito',sans-serif"}}>
+      <AddPage T={T} onSave={rec=>{setRecords(p=>[rec,...p]);setShowAdd(false);}} onCancel={()=>setShowAdd(false)}/>
+    </div>
+  );
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Nunito:wght@300;400;500;600;700&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:'Nunito',sans-serif;background:#D8D0CC;}
+        @keyframes slideUp{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes slideRight{from{opacity:0;transform:translateX(-24px);}to{opacity:1;transform:translateX(0);}}
+        @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+        ::-webkit-scrollbar{width:0;height:0;}
+        input,textarea{color:inherit;}
+      `}</style>
+
+      <div style={{maxWidth:480,margin:"0 auto",minHeight:"100vh",background:T.bg,position:"relative",overflowX:"hidden",fontFamily:"'Nunito',sans-serif"}}>
+        {/* Sticky Top Bar */}
+        <div style={{position:"sticky",top:0,zIndex:50,background:T.bg,borderBottom:`1px solid ${T.border}`,padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <button onClick={()=>setShowMenu(true)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}><Ico.Menu T={T}/></button>
+          <div style={{textAlign:"center"}}>
+            {user&&<div style={{fontFamily:"'Playfair Display',serif",fontSize:11,fontStyle:"italic",color:T.primary,letterSpacing:0.5,lineHeight:1}}>{user}'s</div>}
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:T.primaryDeep,lineHeight:1.1}}>Nailogue</div>
+          </div>
+          <button onClick={()=>user&&setShowNotif(v=>!v)} style={{background:"none",border:"none",cursor:"pointer",padding:4}}>
+            {user?<Ico.Bell T={T} dot={hasNotif}/>:<span onClick={e=>{e.stopPropagation();setShowAuth(true);}} style={{fontSize:12,color:T.primary,fontWeight:700,cursor:"pointer"}}>Log in</span>}
+          </button>
+        </div>
+
+        {/* Page content */}
+        <div style={{overflowY:"auto",height:"calc(100vh - 117px)"}}>
+          {tab==="home"&&<HomePage T={T} user={user} records={records} appointment={appointment} onBook={()=>user?setShowBooking(true):setShowAuth(true)} onLoginPrompt={()=>setShowAuth(true)}/>}
+          {tab==="calendar"&&<CalendarPage T={T} records={records}/>}
+          {tab==="explore"&&<ExplorePage T={T} user={user} onLoginPrompt={()=>setShowAuth(true)}/>}
+          {tab==="profile"&&<ProfilePage T={T} user={user} onLoginPrompt={()=>setShowAuth(true)} onLogout={()=>{setUser(null);setTab("home");}} records={records} themeName={themeName} setTheme={setThemeName}/>}
+        </div>
+
+        {/* Bottom Nav */}
+        <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:T.navBg,borderTop:`1px solid ${T.border}`,backdropFilter:"blur(20px)",display:"flex",alignItems:"center",padding:"8px 0 22px",zIndex:100}}>
+          {TABS.map(({key,label,Icon})=>
+            key==="add"?(
+              <div key="add" style={{flex:1,display:"flex",justifyContent:"center"}}>
+                <button onClick={()=>user?setShowAdd(true):setShowAuth(true)} style={{width:50,height:50,borderRadius:"50%",background:`linear-gradient(135deg,${T.primary},${T.primaryDeep})`,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 16px ${T.primary}55`,transform:"translateY(-10px)"}}>
+                  <Ico.Add/>
+                </button>
+              </div>
+            ):(
+              <button key={key} onClick={()=>setTab(key)} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"4px 0",fontFamily:"inherit"}}>
+                <Icon a={tab===key} T={T}/>
+                <span style={{fontSize:10,fontWeight:tab===key?700:500,color:tab===key?T.primary:T.textLight}}>{label}</span>
+                {tab===key&&<div style={{width:4,height:4,borderRadius:"50%",background:T.primary}}/>}
+              </button>
+            )
+          )}
+        </div>
+
+        {/* Overlays */}
+        {showMenu&&<HamburgerMenu T={T} user={user} themeName={themeName} setTheme={setThemeName} onNav={k=>{setTab(k==="add"?"home":k);if(k==="add")setShowAdd(true);}} onLogout={()=>{setUser(null);setTab("home");}} onClose={()=>setShowMenu(false)}/>}
+        {showNotif&&<NotifPanel T={T} days={days} onClose={()=>setShowNotif(false)}/>}
+        {showAuth&&<AuthModal T={T} mode={authMode} onClose={()=>setShowAuth(false)} onAuth={username=>setUser(username)}/>}
+        {showBooking&&<BookingModal T={T} onClose={()=>setShowBooking(false)} onConfirm={form=>setAppointment(form)} initial={appointment}/>}
+      </div>
+    </>
+  );
+}
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(r => console.log('SW registered'))
+          .catch(e => console.log('SW error', e));
+      });
+    }
+  </script>
+</body>
+</html>
