@@ -1,8 +1,6 @@
-const CACHE = 'nailogue-v1';
-const ASSETS = ['/', '/index.html'];
+const CACHE = 'nailogue-v2';
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
   self.skipWaiting();
 });
 
@@ -15,11 +13,21 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
+// Network first, fallback to cache
 self.addEventListener('fetch', e => {
+  // Skip non-GET requests
+  if (e.request.method !== 'GET') return;
+  
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).catch(() => caches.match('/index.html'));
-    })
+    fetch(e.request)
+      .then(res => {
+        // Cache successful responses
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return res;
+      })
+      .catch(() => caches.match(e.request).then(cached => cached || caches.match('/index.html')))
   );
 });
